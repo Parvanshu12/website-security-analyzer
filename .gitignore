@@ -1,0 +1,18 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Database storage file (ignore local sqlite db to prevent binary commit bloat)
+database/scan_history.db
+
+# Flask/Python environment configurations
+.env
+.flaskenv
+venv/
+env/
+ENV/
+
+# OS metadata files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,957 @@
+/*
+================================================================================
+static/style.css - Premium Cyber-Security Console Theme
+================================================================================
+This stylesheet defines the visual architecture, typography, and styling for our scanner.
+It implements:
+1. Cyber-Dark Aesthetic: Deep graphite and cobalt backgrounds with electric neon accents.
+2. Glassmorphism Design: Semi-transparent panels using backdrop filters to look like a high-tech terminal.
+3. Micro-Animations: Transitions, glows, and keyframe animations that make the dashboard feel alive.
+
+CSS CONCEPT - Custom Variables (CSS variables):
+We define root custom variables (e.g. `--color-bg`) to maintain a single source of truth
+for our design system's palette. This makes editing styles and scaling themes very easy.
+
+CSS CONCEPT - Responsive Design (Flexbox and CSS Grid):
+We use modern layouts (Flexbox for rows/columns, Grid for tabular reports) to ensure
+the application scales beautifully on any screen size.
+================================================================================
+*/
+
+/* -----------------------------------------------------------------------------
+   1. Design Token Registry (Global Variables)
+   ----------------------------------------------------------------------------- */
+:root {
+    /* Base background colors */
+    --color-bg-base: #060913;          /* Dark deep space charcoal-blue */
+    --color-bg-card: rgba(13, 20, 38, 0.65); /* Translucent glass card panel */
+    --color-bg-card-hover: rgba(19, 29, 54, 0.85);
+    
+    /* Neon Color System */
+    --color-primary-cyan: #00f2fe;     /* Electric Cybersecurity Cyan */
+    --color-primary-blue: #4facfe;     /* Deep Cobalt Tech Blue */
+    --color-accent-purple: #7000ff;
+    
+    /* Alert Status Colors */
+    --color-green: #00f5a0;            /* Cyber Green (Secure state) */
+    --color-yellow: #ffd200;           /* Cyber Yellow (Warning state) */
+    --color-red: #ff3366;              /* Cyber Red (Vulnerability risk) */
+    
+    /* Text Typography Colors */
+    --color-text-primary: #f1f5f9;     /* Off-white */
+    --color-text-secondary: #94a3b8;   /* Muted Slate Gray */
+    --color-text-muted: #64748b;
+    
+    /* Structural Borders & Shadows */
+    --border-glass: 1px solid rgba(255, 255, 255, 0.08);
+    --border-glow-cyan: 1px solid rgba(0, 242, 254, 0.3);
+    --shadow-neon-cyan: 0 0 15px rgba(0, 242, 254, 0.25);
+    --shadow-neon-red: 0 0 15px rgba(255, 51, 102, 0.25);
+    --shadow-neon-green: 0 0 15px rgba(0, 245, 160, 0.25);
+}
+
+/* -----------------------------------------------------------------------------
+   2. Global Document Reset
+   ----------------------------------------------------------------------------- */
+*, *::before, *::after {
+    box-sizing: border-box; /* Ensures padding & borders are included in elements' width calculation */
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--color-bg-base);
+    color: var(--color-text-primary);
+    font-family: 'Outfit', sans-serif; /* Smooth premium UI font */
+    line-height: 1.6;
+    overflow-x: hidden; /* Prevents unwanted horizontal layout breaks */
+    min-height: 100vh;
+    position: relative;
+}
+
+.monospaced {
+    font-family: 'Fira Code', 'Courier New', monospace; /* Monospaced font for code, hashes, paths */
+}
+
+.font-bold {
+    font-weight: 600;
+}
+
+/* -----------------------------------------------------------------------------
+   3. Premium Animated Glowing Background
+   ----------------------------------------------------------------------------- */
+.glow-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1; /* Placed behind all content layers */
+    overflow: hidden;
+}
+
+/* CYBER CONCEPT - Background Blobs:
+   We place two massive blurred glowing circles that slowly shift across the screen.
+   This replicates high-end premium software interfaces. */
+.blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.12;
+    animation: float 25s infinite alternate ease-in-out;
+}
+
+.blob-cyan {
+    top: -10%;
+    left: 10%;
+    width: 400px;
+    height: 400px;
+    background: var(--color-primary-cyan);
+}
+
+.blob-blue {
+    bottom: -10%;
+    right: 15%;
+    width: 500px;
+    height: 500px;
+    background: var(--color-accent-purple);
+    animation-delay: -5s; /* Offsets the animation timing */
+}
+
+/* Keyframe animations declare how CSS properties transition over time. */
+@keyframes float {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(60px, -50px) scale(1.15); }
+    100% { transform: translate(-30px, 80px) scale(0.9); }
+}
+
+/* -----------------------------------------------------------------------------
+   4. Layout Container
+   ----------------------------------------------------------------------------- */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.main-content {
+    flex-grow: 1; /* Pushes footer to the bottom of the viewport */
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* -----------------------------------------------------------------------------
+   5. Header Branding
+   ----------------------------------------------------------------------------- */
+.app-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.logo-icon {
+    font-size: 2rem;
+    filter: drop-shadow(0 0 10px rgba(0, 242, 254, 0.4));
+}
+
+.logo-text {
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.highlight {
+    background: linear-gradient(135deg, var(--color-primary-cyan) 0%, var(--color-primary-blue) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 8px rgba(0, 242, 254, 0.5));
+}
+
+.subtitle {
+    color: var(--color-text-secondary);
+    font-size: 1.05rem;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+}
+
+/* -----------------------------------------------------------------------------
+   6. Premium Glassmorphism Panels (Cards)
+   ----------------------------------------------------------------------------- */
+/* CYBER CONCEPT - Glassmorphism:
+   Using 'backdrop-filter: blur' allows the background elements to be visible yet distorted,
+   mimicking modern high-end user interfaces. We use a thin, semi-transparent border to complete the look. */
+.card {
+    background: var(--color-bg-card);
+    border: var(--border-glass);
+    border-radius: 12px;
+    padding: 1.5rem;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    background: var(--color-bg-card-hover);
+    border-color: rgba(0, 242, 254, 0.15);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: var(--border-glass);
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.card-header h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--color-text-primary);
+}
+
+.console-status-dot {
+    width: 8px;
+    height: 8px;
+    background-color: var(--color-primary-cyan);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--color-primary-cyan);
+    animation: pulse 1.8s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.95); opacity: 0.5; }
+    50% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 12px var(--color-primary-cyan); }
+    100% { transform: scale(0.95); opacity: 0.5; }
+}
+
+/* -----------------------------------------------------------------------------
+   7. Form Controls & Buttons
+   ----------------------------------------------------------------------------- */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--color-text-secondary);
+    font-weight: 600;
+}
+
+.input-wrapper {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    position: relative;
+}
+
+.input-icon {
+    position: absolute;
+    left: 1rem;
+    font-size: 1.2rem;
+    pointer-events: none;
+}
+
+/* Futuristic Text Input */
+input[type="text"] {
+    width: 100%;
+    padding: 1rem 1rem 1rem 2.8rem;
+    background: rgba(8, 12, 24, 0.8);
+    border: var(--border-glass);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+input[type="text"]:focus {
+    outline: none;
+    border-color: var(--color-primary-cyan);
+    box-shadow: var(--shadow-neon-cyan);
+    background: rgba(8, 12, 24, 0.95);
+}
+
+/* Scanning Trigger Button */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 1.75rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--color-primary-cyan) 0%, var(--color-primary-blue) 100%);
+    color: #020617; /* Dark text for contrast against bright cyan */
+    box-shadow: 0 4px 15px rgba(0, 242, 254, 0.2);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px); /* Lifts the button slightly */
+    box-shadow: var(--shadow-neon-cyan);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn:disabled {
+    background: var(--color-text-muted);
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+/* -----------------------------------------------------------------------------
+   8. System Alerts / Validation Notifications
+   ----------------------------------------------------------------------------- */
+.alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+
+.alert-error {
+    background: rgba(255, 51, 102, 0.08);
+    border: 1px solid rgba(255, 51, 102, 0.3);
+    color: #ffd1d8;
+    box-shadow: var(--shadow-neon-red);
+}
+
+.alert-icon {
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+/* -----------------------------------------------------------------------------
+   9. Simulated Console Emulator (Terminal logs)
+   ----------------------------------------------------------------------------- */
+.console-card {
+    background: #020617;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+}
+
+.console-controls {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.dot-red { background-color: #ff5f56; }
+.dot-yellow { background-color: #ffbd2e; }
+.dot-green { background-color: #27c93f; }
+
+.console-title {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin-left: 1rem;
+}
+
+.console-body {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.85rem;
+    color: #38bdf8; /* Soft console cyan */
+    min-height: 250px;
+    max-height: 350px;
+    overflow-y: auto;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    background-color: #030712;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Scrollbar styling for console terminal box */
+.console-body::-webkit-scrollbar {
+    width: 6px;
+}
+.console-body::-webkit-scrollbar-track {
+    background: #030712;
+}
+.console-body::-webkit-scrollbar-thumb {
+    background: #1f2937;
+    border-radius: 3px;
+}
+
+.console-line {
+    word-break: break-all;
+}
+
+/* -----------------------------------------------------------------------------
+   10. Results Dashboard - Overview Cards
+   ----------------------------------------------------------------------------- */
+.overview-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 2fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+/* Grade Circular Gauge */
+.grade-card {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.grade-circle {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border: 6px solid #1e293b;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Grade Specific Neon Glows */
+.grade-A { border-color: var(--color-green); box-shadow: var(--shadow-neon-green); }
+.grade-B { border-color: var(--color-green); box-shadow: var(--shadow-neon-green); opacity: 0.95; }
+.grade-C { border-color: var(--color-yellow); box-shadow: 0 0 15px rgba(255, 210, 0, 0.25); }
+.grade-D { border-color: var(--color-yellow); box-shadow: 0 0 15px rgba(255, 210, 0, 0.25); }
+.grade-F { border-color: var(--color-red); box-shadow: var(--shadow-neon-red); }
+
+.grade-letter {
+    font-size: 2.8rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+/* Letter Colors matching grade level status */
+.grade-A .grade-letter, .grade-B .grade-letter { color: var(--color-green); }
+.grade-C .grade-letter, .grade-D .grade-letter { color: var(--color-yellow); }
+.grade-F .grade-letter { color: var(--color-red); }
+
+.grade-score {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.summary-details h2 {
+    font-size: 1.4rem;
+    margin-bottom: 0.25rem;
+}
+
+.summary-details p {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+/* Metrics Table */
+.metrics-card h3 {
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+    letter-spacing: 1px;
+    margin-bottom: 1rem;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.metric-item {
+    background: rgba(8, 12, 24, 0.4);
+    border: var(--border-glass);
+    border-radius: 8px;
+    padding: 0.75rem;
+    text-align: center;
+}
+
+.metric-label {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.metric-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+/* -----------------------------------------------------------------------------
+   11. Results Dashboard - Scanning Report Modules
+   ----------------------------------------------------------------------------- */
+.report-sections-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 columns split evenly */
+    gap: 1.5rem;
+}
+
+.report-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.report-card {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Security Badges indicating module names */
+.sec-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #020617;
+}
+
+.sec-badge-ssl { background-color: var(--color-primary-cyan); }
+.sec-badge-port { background-color: #fca5a5; }
+.sec-badge-tech { background-color: #c084fc; }
+.sec-badge-header { background-color: #fed7aa; }
+.sec-badge-dns { background-color: #93c5fd; }
+.sec-badge-whois { background-color: #86efac; }
+
+.card-intro {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 1rem;
+}
+
+/* Certificate details lists */
+.details-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.details-list li {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    padding-bottom: 0.4rem;
+}
+
+.details-list li strong {
+    color: var(--color-text-secondary);
+    font-weight: 400;
+}
+
+/* -----------------------------------------------------------------------------
+   12. Report Card Sub-components (Pills, badges)
+   ----------------------------------------------------------------------------- */
+.card-status-pill {
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.card-status-pill.secure {
+    background: rgba(0, 245, 160, 0.08);
+    border: 1px solid rgba(0, 245, 160, 0.25);
+    color: var(--color-green);
+}
+
+.card-status-pill.vulnerable {
+    background: rgba(255, 51, 102, 0.08);
+    border: 1px solid rgba(255, 51, 102, 0.25);
+    color: var(--color-red);
+}
+
+/* Standard dynamic badges */
+.badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.badge-success { background-color: rgba(0, 245, 160, 0.15); color: var(--color-green); border: 1px solid rgba(0, 245, 160, 0.3); }
+.badge-warning { background-color: rgba(255, 210, 0, 0.15); color: var(--color-yellow); border: 1px solid rgba(255, 210, 0, 0.3); }
+.badge-error { background-color: rgba(255, 51, 102, 0.15); color: var(--color-red); border: 1px solid rgba(255, 51, 102, 0.3); }
+
+/* Tables used in Port Scanner */
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.report-table th, .report-table td {
+    padding: 0.6rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.report-table th {
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+}
+
+.table-note {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+/* Technology detector items list */
+.tech-stack-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.tech-item {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 0.75rem;
+}
+
+.tech-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.tech-meta {
+    font-size: 0.85rem;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.35rem;
+}
+
+.tech-status-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-start;
+}
+
+.tech-notes {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+/* -----------------------------------------------------------------------------
+   13. HTTP Headers Box & Custom Delineation
+   ----------------------------------------------------------------------------- */
+.headers-check-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.header-result-item {
+    border-left: 3px solid transparent;
+    background: rgba(8, 12, 24, 0.3);
+    padding: 0.75rem;
+    border-radius: 0 6px 6px 0;
+}
+
+.header-result-item.secure-border {
+    border-left-color: var(--color-green);
+}
+
+.header-result-item.danger-border {
+    border-left-color: var(--color-red);
+}
+
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
+
+.header-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.header-value {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    background: rgba(2, 6, 23, 0.5);
+    padding: 0.35rem 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 0.4rem;
+    border: 1px solid rgba(255,255,255,0.03);
+}
+
+.header-desc {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+/* -----------------------------------------------------------------------------
+   14. DNS record styling boxes
+   ----------------------------------------------------------------------------- */
+.dns-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.dns-record-item {
+    background: rgba(8, 12, 24, 0.4);
+    border: var(--border-glass);
+    padding: 0.6rem;
+    border-radius: 6px;
+}
+
+.dns-record-item h5 {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+}
+
+.dns-record-item p, .dns-record-item li {
+    font-size: 0.8rem;
+}
+
+.dns-record-item ul {
+    list-style-position: inside;
+    padding-left: 0.25rem;
+}
+
+.dns-policy-status {
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.dns-policy-status.secure-box {
+    background: rgba(0, 245, 160, 0.05);
+    border: 1px dashed rgba(0, 245, 160, 0.25);
+}
+
+.dns-policy-status.warning-box {
+    background: rgba(255, 51, 102, 0.05);
+    border: 1px dashed rgba(255, 51, 102, 0.25);
+}
+
+.policy-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+}
+
+.policy-desc {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.policy-val {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+/* -----------------------------------------------------------------------------
+   15. Utilities & Keyframe Animations
+   ----------------------------------------------------------------------------- */
+.hidden {
+    display: none !important;
+}
+
+.break-all {
+    word-break: break-all;
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-fade-in-fast {
+    animation: fadeIn 0.15s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Text status color modifiers */
+.text-cyan { color: var(--color-primary-cyan); }
+.text-green { color: var(--color-green); }
+.text-yellow { color: var(--color-yellow); }
+.text-red { color: var(--color-red); }
+
+/* Footer styling */
+footer.app-footer {
+    text-align: center;
+    margin-top: 3rem;
+    padding: 1.5rem 0;
+    border-top: var(--border-glass);
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+}
+
+/* -----------------------------------------------------------------------------
+   15b. Scan History Console & Navigation Tables
+   ----------------------------------------------------------------------------- */
+.history-card {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.history-dot {
+    background-color: var(--color-accent-purple) !important;
+    box-shadow: 0 0 8px var(--color-accent-purple) !important;
+    animation: pulse-purple 2s infinite !important;
+}
+
+@keyframes pulse-purple {
+    0% { transform: scale(0.95); opacity: 0.5; }
+    50% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 12px var(--color-accent-purple); }
+    100% { transform: scale(0.95); opacity: 0.5; }
+}
+
+.table-responsive {
+    width: 100%;
+    overflow-x: auto; /* Ensures tables scroll horizontally on small mobile screens */
+    -webkit-overflow-scrolling: touch;
+}
+
+.history-table {
+    margin-top: 0.5rem;
+}
+
+.history-table th {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 0.75rem;
+}
+
+.history-row {
+    transition: background-color 0.2s ease;
+}
+
+.history-row:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.active-history-row {
+    background-color: rgba(0, 242, 254, 0.05) !important;
+    border-left: 3px solid var(--color-primary-cyan) !important;
+}
+
+.btn-history-link {
+    color: var(--color-primary-cyan);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid rgba(0, 242, 254, 0.2);
+    border-radius: 4px;
+    background: rgba(0, 242, 254, 0.02);
+}
+
+.btn-history-link:hover {
+    color: #ffffff;
+    background-color: var(--color-primary-cyan);
+    border-color: var(--color-primary-cyan);
+    box-shadow: var(--shadow-neon-cyan);
+    transform: translateX(3px); /* Micro-animation sliding the link right */
+}
+
+/* Small grade badge labels inside history tables */
+.badge-grade {
+    display: inline-block;
+    min-width: 24px;
+    text-align: center;
+    font-weight: 700;
+    padding: 0.15rem 0.35rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+
+.grade-badge-A, .grade-badge-B { background-color: rgba(0, 245, 160, 0.15); color: var(--color-green); border: 1px solid rgba(0, 245, 160, 0.3); }
+.grade-badge-C, .grade-badge-D { background-color: rgba(255, 210, 0, 0.15); color: var(--color-yellow); border: 1px solid rgba(255, 210, 0, 0.3); }
+.grade-badge-F { background-color: rgba(255, 51, 102, 0.15); color: var(--color-red); border: 1px solid rgba(255, 51, 102, 0.3); }
+
+.font-size-sm {
+    font-size: 0.8rem;
+}
+
+/* -----------------------------------------------------------------------------
+   16. Media Queries (Mobile Responsive Design)
+   ----------------------------------------------------------------------------- */
+/* CSS CONCEPT - Media Queries:
+   When screen widths fall below 768px (standard tablet/mobile breakpoint), we dynamically adjust
+   the layout from grid columns to simple stacked blocks so it is completely readable on mobile. */
+@media (max-width: 768px) {
+    .overview-grid {
+        grid-template-columns: 1fr; /* Stack the grade and metrics card */
+    }
+    
+    .metrics-grid {
+        grid-template-columns: 1fr; /* Stack individual metrics */
+    }
+
+    .report-sections-grid {
+        grid-template-columns: 1fr; /* Stack reports columns */
+    }
+    
+    .logo-text {
+        font-size: 2rem;
+    }
+    
+    .btn {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+}

@@ -1,0 +1,505 @@
+<!--
+================================================================================
+templates/index.html - Main Frontend Interface
+================================================================================
+This is the single template that handles both the entry input form and the scanning results.
+We use HTML5 standard elements combined with Jinja (Flask's template rendering engine).
+
+HTML CONCEPT - Structure:
+HTML defines the content and architecture of a web page using nested tags. We use semantic
+elements like <header>, <main>, and <section> for readability and accessibility (SEO/screen readers).
+
+JINJA CONCEPT - Dynamic Templates:
+Jinja allows us to inject Python variables directly into HTML using double curly braces:
+    {{ variable_name }}
+It also allows dynamic control flow (conditionals, loops) using:
+    {% if condition %} ... {% endif %}
+    {% for item in list %} ... {% endfor %}
+
+CYBERSECURITY CONCEPT - XSS & Output Sanitization:
+Jinja automatically escapes variables (e.g. converting '<' to '&lt;') when rendering.
+This is a critical built-in security control that mitigates Cross-Site Scripting (XSS)
+by preventing attackers from injecting raw executable JavaScript code into inputs.
+================================================================================
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Ensure responsive scaling across mobile, tablet, and desktop devices -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberGuard // Website Security Analyzer</title>
+    
+    <!-- Link to premium typography from Google Fonts:
+         1. 'Outfit' is a sleek, modern geometric sans-serif for UI elements and headers.
+         2. 'Fira Code' is a monospaced font with coding ligatures, perfect for our cyber-console reports. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Link to our styling sheet. The 'url_for' Flask function maps to our static/ folder,
+         helping resolve file paths correctly regardless of server URL routing. -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- Glowing futuristic background blobs -->
+    <div class="glow-bg">
+        <div class="blob blob-cyan"></div>
+        <div class="blob blob-blue"></div>
+    </div>
+
+    <div class="container">
+        
+        <!-- Header Brand Section -->
+        <header class="app-header">
+            <div class="logo">
+                <span class="logo-icon">🛡️</span>
+                <h1 class="logo-text">CYBER<span class="highlight">GUARD</span></h1>
+            </div>
+            <p class="subtitle">Passive & Active Web Vulnerability Reconnaissance Console</p>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            
+            <!-- Scan Input Console Card -->
+            <section class="card glassmorphism scan-form-card">
+                <div class="card-header border-glow">
+                    <span class="console-status-dot"></span>
+                    <h3>Target Selection & Scan Config</h3>
+                </div>
+                
+                <!-- URL input form.
+                     HTTP CONCEPT - Method:
+                     We set method="POST" so the URL data is sent in the HTTP Request Body,
+                     rather than exposed directly in the URL search bar (which GET would do). -->
+                <form action="/" method="POST" id="scan-form">
+                    <div class="form-group">
+                        <label for="url-input">Target Website URL</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">🌐</span>
+                            <input 
+                                type="text" 
+                                id="url-input" 
+                                name="url" 
+                                placeholder="e.g. google.com or https://example.com" 
+                                value="{{ url_input }}"
+                                required
+                                autocomplete="off"
+                            >
+                            <button type="submit" class="btn btn-primary" id="scan-button">
+                                <span class="btn-text">Execute Scan</span>
+                                <span class="btn-icon">⚡</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Flask Flash/Error Display:
+                     If the backend detects an invalid URL, this conditional block renders an alert. -->
+                {% if error_message %}
+                <div class="alert alert-error animate-fade-in" id="error-alert">
+                    <span class="alert-icon">⚠️</span>
+                    <div class="alert-content">
+                        <strong>Security Error:</strong> {{ error_message }}
+                    </div>
+                </div>
+                {% endif %}
+            </section>
+
+            <!-- SCAN HISTORY CONSOLE CARD:
+                 Renders the list of the most recent scans queried from the SQLite database.
+                 Visible to the user at all times, illustrating record persistence. -->
+            {% if recent_scans %}
+            <section class="card glassmorphism history-card animate-fade-in" id="history-section">
+                <div class="card-header border-glow">
+                    <span class="console-status-dot history-dot"></span>
+                    <h3>Recent Security Audits Ledger</h3>
+                </div>
+                <div class="history-body">
+                    <div class="table-responsive">
+                        <table class="report-table history-table">
+                            <thead>
+                                <tr>
+                                    <th>Target Host Domain</th>
+                                    <th>Overall Security Grade</th>
+                                    <th>Vulnerability Score</th>
+                                    <th>Audit Time (UTC)</th>
+                                    <th>Report Link</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for scan in recent_scans %}
+                                <tr class="history-row {% if results and results.id == scan.id %}active-history-row{% endif %}">
+                                    <td class="monospaced break-all font-bold text-cyan">{{ scan.domain }}</td>
+                                    <td>
+                                        <span class="badge badge-grade grade-badge-{{ scan.grade }}">{{ scan.grade }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="font-bold {% if scan.score >= 90 %}text-green{% elif scan.score >= 70 %}text-yellow{% else %}text-red{% endif %}">
+                                            {{ scan.score }}/100
+                                        </span>
+                                    </td>
+                                    <td class="text-secondary monospaced font-size-sm">{{ scan.scan_date }}</td>
+                                    <td>
+                                        <a href="/?history_id={{ scan.id }}" class="btn-history-link">
+                                            View Profile &rarr;
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+
+            <!-- Interactive Terminal Console Emulator (Loading Simulation):
+                 We show this block dynamically using JavaScript when the scan form is submitted. -->
+            <section class="card glassmorphism console-card hidden" id="terminal-console">
+                <div class="card-header">
+                    <div class="console-controls">
+                        <span class="dot dot-red"></span>
+                        <span class="dot dot-yellow"></span>
+                        <span class="dot dot-green"></span>
+                    </div>
+                    <span class="console-title">cyberguard-terminal.sh</span>
+                </div>
+                <div class="console-body" id="console-logs">
+                    <!-- Dynamic logs will be appended here using vanilla JS -->
+                </div>
+            </section>
+
+            <!-- SCAN RESULTS DASHBOARD:
+                 This section renders only if the backend returns a successful 'results' dictionary. -->
+            {% if results %}
+            <section class="results-dashboard animate-fade-in" id="results-section">
+                
+                <!-- Summary Overview Grid -->
+                <div class="overview-grid">
+                    
+                    <!-- Grade Badge Card -->
+                    <div class="card glassmorphism summary-card grade-card">
+                        <div class="grade-circle grade-{{ results.grade }}">
+                            <span class="grade-letter">{{ results.grade }}</span>
+                            <span class="grade-score">{{ results.score }}/100</span>
+                        </div>
+                        <div class="summary-details">
+                            <h2>Security Grade</h2>
+                            <p>Target: <span class="monospaced">{{ results.domain }}</span></p>
+                            <p>Status: <span class="badge badge-success">Scan Finished</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Scan Metrics Card -->
+                    <div class="card glassmorphism summary-card metrics-card">
+                        <h3>Scan Metadatas</h3>
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <span class="metric-label">Scan Protocol</span>
+                                <span class="metric-value text-cyan">{{ results.url.split('://')[0]|upper }}</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Scan Duration</span>
+                                <span class="metric-value">{{ results.scan_time }}s</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Vulnerability Level</span>
+                                <span class="metric-value 
+                                    {% if results.score >= 90 %}text-green
+                                    {% elif results.score >= 70 %}text-yellow
+                                    {% else %}text-red{% endif %}">
+                                    {% if results.score >= 90 %}Low
+                                    {% elif results.score >= 70 %}Moderate
+                                    {% else %}Critical{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Report Categorized View -->
+                <div class="report-sections-grid">
+                    
+                    <!-- Column 1: Network & Identity Scan -->
+                    <div class="report-column">
+                        
+                        <!-- 1. SSL/TLS Cryptography Status -->
+                        <div class="card glassmorphism report-card">
+                            <div class="card-header">
+                                <span class="sec-badge sec-badge-ssl">SSL</span>
+                                <h4>SSL/TLS Cryptography Certificate</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-status-pill 
+                                    {% if results.ssl.details.enabled and results.ssl.details.valid %}secure
+                                    {% else %}vulnerable{% endif %}">
+                                    {% if results.ssl.details.enabled and results.ssl.details.valid %}
+                                        Secure TLS Encryption Verified
+                                    {% elif results.ssl.details.enabled and not results.ssl.details.valid %}
+                                        Invalid/Expired Certificate Warning
+                                    {% else %}
+                                        Unencrypted Connection Warning
+                                    {% endif %}
+                                </div>
+                                <ul class="details-list">
+                                    <li><strong>CA Issuer:</strong> <span>{{ results.ssl.details.issuer }}</span></li>
+                                    <li><strong>Negotiated Cipher:</strong> <span class="monospaced">{{ results.ssl.details.version }}</span></li>
+                                    <li><strong>Public Key Algorithm:</strong> <span class="break-all">{{ results.ssl.details.key_strength }}</span></li>
+                                    <li><strong>Certificate Age:</strong> <span>{{ results.ssl.details.days_remaining }} Days Remaining</span></li>
+                                    <li><strong>Signing Hashing:</strong> <span class="monospaced">{{ results.ssl.details.signature_algorithm }}</span></li>
+                                </ul>
+                                {% if results.ssl.details.error %}
+                                <div class="dns-policy-status warning-box" style="margin-top: 1rem; border-color: var(--color-red); background-color: rgba(255, 51, 102, 0.03);">
+                                    <strong class="text-red">Handshake Audit Log:</strong>
+                                    <p class="monospaced font-size-sm break-all" style="margin-top: 0.25rem; color: #fca5a5;">{{ results.ssl.details.error }}</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- 2. Port Scanner (Active Recon) -->
+                        <div class="card glassmorphism report-card">
+                            <div class="card-header">
+                                <span class="sec-badge sec-badge-port">PORT</span>
+                                <h4>Network Port Probe Scan</h4>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-intro">Scanning popular target TCP/IP channels to detect listening daemons.</p>
+                                <table class="report-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Port</th>
+                                            <th>Service</th>
+                                            <th>Status</th>
+                                            <th>Evaluation</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in results.ports.ports %}
+                                        <tr>
+                                            <td class="monospaced font-bold">{{ item.port }}</td>
+                                            <td>{{ item.service }}</td>
+                                            <td><span class="badge {% if item.state == 'Open' %}badge-warning{% else %}badge-success{% endif %}">{{ item.state }}</span></td>
+                                            <td class="table-note">{{ item.notes }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- 3. Tech Stack fingerprinting -->
+                        <div class="card glassmorphism report-card">
+                            <div class="card-header">
+                                <span class="sec-badge sec-badge-tech">TECH</span>
+                                <h4>Infrastructure Technology Fingerprint</h4>
+                            </div>
+                            <div class="card-body">
+                                <ul class="tech-stack-list">
+                                    {% for tech, details in results.tech.technologies.items() %}
+                                    <li class="tech-item">
+                                        <div class="tech-meta">
+                                            <strong>{{ tech }}:</strong> 
+                                            <span class="monospaced font-bold text-cyan">{{ details.name }} ({{ details.version }})</span>
+                                        </div>
+                                        <div class="tech-status-container">
+                                            <span class="badge {% if details.secure %}badge-success{% else %}badge-warning{% endif %}">
+                                                {% if details.secure %}Secure Configuration{% else %}Version Leak{% endif %}
+                                            </span>
+                                            <p class="tech-notes">{{ details.notes }}</p>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Web & DNS Policy Scan -->
+                    <div class="report-column">
+                        
+                        <!-- 4. HTTP Headers Analyzer -->
+                        <div class="card glassmorphism report-card">
+                            <div class="card-header">
+                                <span class="sec-badge sec-badge-header">HEAD</span>
+                                <h4>HTTP Security Headers Policy</h4>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-intro">Browser defense instruction checks to mitigate injection and forgery attacks.</p>
+                                <div class="headers-check-list">
+                                    {% for header, val in results.headers.headers.items() %}
+                                    <div class="header-result-item {% if val.secure %}secure-border{% else %}danger-border{% endif %}">
+                                        <div class="header-row">
+                                            <span class="header-name monospaced">{{ header }}</span>
+                                            <span class="badge {% if val.secure %}badge-success{% else %}badge-error{% endif %}">
+                                                {{ val.status }}
+                                            </span>
+                                        </div>
+                                        {% if val.value %}
+                                        <div class="header-value">
+                                            <strong>Value:</strong> <span class="monospaced break-all">{{ val.value }}</span>
+                                        </div>
+                                        {% endif %}
+                                        <p class="header-desc">{{ val.description }}</p>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. DNS Records Verification -->
+                        <div class="card glassmorphism report-card">
+                            <div class="card-header">
+                                <span class="sec-badge sec-badge-dns">DNS</span>
+                                <h4>DNS Lookup & Verification</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="dns-grid">
+                                    <div class="dns-record-item">
+                                        <h5>A (IPv4 Resolve)</h5>
+                                        <p class="monospaced break-all">{{ results.dns.records.A | join(', ') }}</p>
+                                    </div>
+                                    <div class="dns-record-item">
+                                        <h5>MX (Mail Gateway Exchange)</h5>
+                                        <p class="monospaced break-all">{{ results.dns.records.MX | join(', ') }}</p>
+                                    </div>
+                                    <div class="dns-record-item">
+                                        <h5>TXT Policies</h5>
+                                        <ul>
+                                            {% for record in results.dns.records.TXT %}
+                                            <li class="monospaced break-all">{{ record }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="dns-policy-status {% if results.dns.records.DMARC.secure %}secure-box{% else %}warning-box{% endif %}">
+                                    <div class="policy-row">
+                                        <strong>DMARC Anti-Phishing:</strong> 
+                                        <span class="badge {% if results.dns.records.DMARC.secure %}badge-success{% else %}badge-error{% endif %}">
+                                            {{ results.dns.records.DMARC.status }}
+                                        </span>
+                                    </div>
+                                    <p class="policy-desc">{{ results.dns.records.DMARC.description }}</p>
+                                    {% if results.dns.records.DMARC.policy %}
+                                    <p class="monospaced policy-val">Policy: {{ results.dns.records.DMARC.policy }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 6. WHOIS domain Registration -->
+                        <div class="card glassmorphism report-card">
+                            <div class="card-header">
+                                <span class="sec-badge sec-badge-whois">WHOIS</span>
+                                <h4>Domain Registry Metadata (WHOIS)</h4>
+                            </div>
+                            <div class="card-body">
+                                <ul class="details-list">
+                                    <li><strong>Domain Name:</strong> <span class="monospaced font-bold">{{ results.whois.details.domain_name }}</span></li>
+                                    <li><strong>Registrar Agency:</strong> <span>{{ results.whois.details.registrar }}</span></li>
+                                    <li><strong>Created Date:</strong> <span>{{ results.whois.details.creation_date }}</span></li>
+                                    <li><strong>Expiration Date:</strong> <span>{{ results.whois.details.expiration_date }}</span></li>
+                                    <li><strong>WHOIS Privacy Shield:</strong> 
+                                        <span class="badge {% if results.whois.details.privacy_enabled %}badge-success{% else %}badge-warning{% endif %}">
+                                            {% if results.whois.details.privacy_enabled %}Redacted (Active Privacy){% else %}Exposed Registrant Details{% endif %}
+                                        </span>
+                                    </li>
+                                    <li><strong>Registry Status:</strong> <span class="monospaced break-all">{{ results.whois.details.status }}</span></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+        </main>
+        
+        <footer class="app-footer">
+            <p>&copy; 2026 CyberGuard Education Console. Dedicated to excellence in web penetration testing & defensive engineering.</p>
+        </footer>
+    </div>
+
+    <!-- Vanilla Javascript Logic:
+         JAVASCRIPT CONCEPT - Document Object Model (DOM) & Fetch Actions:
+         JS is executed on the client side inside the browser. It allows us to capture form actions,
+         hide/show parts of the page, and simulate a terminal execution log to demonstrate
+         how security automated tests work. -->
+    <script>
+        // We attach an event listener to the form submission.
+        document.getElementById('scan-form').addEventListener('submit', function(event) {
+            // Find our elements
+            const terminalConsole = document.getElementById('terminal-console');
+            const consoleLogs = document.getElementById('console-logs');
+            const scanButton = document.getElementById('scan-button');
+            const resultsSection = document.getElementById('results-section');
+            const errorAlert = document.getElementById('error-alert');
+            const targetUrl = document.getElementById('url-input').value;
+
+            // If an error alert was showing from a previous request, hide it
+            if (errorAlert) {
+                errorAlert.style.display = 'none';
+            }
+
+            // If a previous results section was showing, hide it so the focus is on the terminal
+            if (resultsSection) {
+                resultsSection.classList.add('hidden');
+            }
+
+            // Hide the recent scans history section during scanning to reduce screen noise
+            const historySection = document.getElementById('history-section');
+            if (historySection) {
+                historySection.classList.add('hidden');
+            }
+
+            // Disable the scan button to prevent double form submissions (a critical UX security practice)
+            scanButton.disabled = true;
+            scanButton.querySelector('.btn-text').innerText = 'Scanning Target...';
+
+            // Show our interactive educational terminal emulator
+            terminalConsole.classList.remove('hidden');
+            terminalConsole.scrollIntoView({ behavior: 'smooth' });
+
+            // Define custom log messages simulating our backend security scan phases
+            const logs = [
+                { text: `[SYSTEM] Booting CyberGuard Scanning Kernel version 1.0.0-prod...`, delay: 100 },
+                { text: `[*] Initializing reconnaissance & mapping modules...`, delay: 200 },
+                { text: `[*] Normalizing host URL: '${targetUrl}'...`, delay: 350 },
+                { text: `[+] URL validated successfully. Protection against SSRF Active.`, delay: 500 },
+                { text: `[*] Probing DNS namespace tables (resolving A, MX, TXT records)...`, delay: 650 },
+                { text: `[*] Auditing SSL/TLS cipher suites & certificate validity parameters...`, delay: 800 },
+                { text: `[*] Requesting HTTP payload. Validating standard client response headers...`, delay: 950 },
+                { text: `[*] Probing default network ports (21 FTP, 22 SSH, 23 Telnet, 80 HTTP, 443 HTTPS)...`, delay: 1100 },
+                { text: `[*] Grabbing technology fingerprints & HTTP Server banners...`, delay: 1250 },
+                { text: `[+] Completed module pipelines. Packaging security profile...`, delay: 1400 },
+                { text: `[+] Generating compliance scorecard. Forwarding results to Dashboard...`, delay: 1550 }
+            ];
+
+            // Append each log line sequentially to simulate actual network activities
+            logs.forEach(function(log) {
+                setTimeout(function() {
+                    const p = document.createElement('p');
+                    p.className = 'console-line animate-fade-in-fast';
+                    p.innerText = log.text;
+                    consoleLogs.appendChild(p);
+                    // Force the console card to scroll to the bottom as logs appear
+                    consoleLogs.scrollTop = consoleLogs.scrollHeight;
+                }, log.delay);
+            });
+
+            // After our terminal animation finishes, let the form submit normally
+            // so Flask handles the actual scan calculations and updates the HTML.
+            setTimeout(function() {
+                // Submit the form programmatically after logs complete
+                event.target.submit();
+            }, 1750);
+
+            // Prevent default form action initially so our terminal displays.
+            event.preventDefault();
+        });
+    </script>
+</body>
+</html>
