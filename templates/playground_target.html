@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CyberGuard Secure Bank Portal</title>
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            margin: 0;
+            padding: 1.5rem;
+        }
+        .bank-container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 2px solid #cbd5e1;
+            padding-bottom: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .logo-icon {
+            font-size: 1.5rem;
+        }
+        .logo-text {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0;
+        }
+        .balance-card {
+            background: #f1f5f9;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .balance-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            margin: 0;
+        }
+        .balance-amount {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0.25rem 0 0 0;
+        }
+        .btn-deposit {
+            display: block;
+            width: 100%;
+            padding: 0.75rem;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            box-sizing: border-box;
+            transition: background 0.2s;
+        }
+        .btn-deposit:hover {
+            background: #059669;
+        }
+        .xss-output {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: #e11d48;
+            background: #fff1f2;
+            border: 1px solid #ffe4e6;
+            padding: 0.5rem;
+            border-radius: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!--
+    CYBERSECURITY LEARNING NOTES:
+    This bank portal has balance management functions.
+    If X-Frame-Options is disabled, an attacker can load this page inside an iframe
+    and align a fake "Claim Prize" button directly on top of our "Deposit Cash" button.
+    -->
+    
+    <div class="bank-container">
+        <div class="header">
+            <span class="logo-icon">🏦</span>
+            <h1 class="logo-text">APEX<span style="color: #10b981;">TRUST</span> MOBILE</h1>
+        </div>
+
+        <div class="balance-card">
+            <h4 class="balance-title">Available Ledger Balance</h4>
+            <div class="balance-amount" id="balance">$10,480.00</div>
+        </div>
+
+        <form onsubmit="event.preventDefault(); triggerDeposit();">
+            <div style="margin-bottom: 1rem;">
+                <label style="font-size: 0.85rem; font-weight: 600; color: #475569;">Amount to Transfer / Deposit</label>
+                <input type="text" value="$5,000.00" disabled style="width:100%; padding:0.6rem; border:1px solid #cbd5e1; border-radius:4px; margin-top:0.25rem; background:#f8fafc; color:#64748b; font-weight: 600; box-sizing: border-box;">
+            </div>
+            
+            <!-- Target of Clickjacking Overlay -->
+            <button type="submit" class="btn-deposit">CONFIRM TRANSFER ⚡</button>
+        </form>
+
+        <!-- XSS vulnerable echo payload sink -->
+        {% if xss_payload %}
+        <div class="xss-output" id="xss-echo-box" style="display: block;">
+            <strong>Reflected Payload Element:</strong>
+            <div id="payload-sink">
+                <!--
+                CYBERSECURITY WARNING - Reflected XSS sink:
+                Using Jinja's safe filter allows raw script rendering.
+                This allows us to simulate XSS attacks and demonstrate CSP blocks.
+                -->
+                {{ xss_payload | safe }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function triggerDeposit() {
+            // Simulated transaction execution
+            const balanceDiv = document.getElementById('balance');
+            balanceDiv.innerText = "$15,480.00";
+            balanceDiv.style.color = "#10b981";
+            
+            // Send log to parent terminal if nesting allowed
+            try {
+                if (parent && parent.printLog) {
+                    parent.printLog("[SYSTEM] Deposit transaction success: Transferred $5,000.00 to ApexTrust.");
+                }
+            } catch(e) {}
+        }
+    </script>
+</body>
+</html>

@@ -38,6 +38,75 @@ def get_issuer_cn(issuer_tuple):
     # Return a safe fallback if CN is not found
     return "Unknown Issuer"
 
+def probe_tls_versions(hostname, port=443):
+    """
+    Actively probes which TLS versions are supported by the target server.
+    Uses unverified contexts to test negotiations regardless of trust validity.
+    """
+    supported = {
+        "TLSv1.0": False,
+        "TLSv1.1": False,
+        "TLSv1.2": False,
+        "TLSv1.3": False
+    }
+    
+    # Probe TLSv1.0
+    try:
+        context = ssl._create_unverified_context()
+        # Enforce ONLY TLS 1.0 negotiation by disabling other versions
+        context.options = ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1_1 | ssl.OP_NO_TLSv1_2
+        # On some newer OpenSSL bindings, disabling TLSv1.3 explicitly is needed
+        if hasattr(ssl, "OP_NO_TLSv1_3"):
+            context.options |= ssl.OP_NO_TLSv1_3
+        with socket.create_connection((hostname, port), timeout=2.0) as sock:
+            with context.wrap_socket(sock, server_hostname=hostname) as ssock:
+                if ssock.version() in ["TLSv1", "TLSv1.0"]:
+                    supported["TLSv1.0"] = True
+    except Exception:
+        pass
+
+    # Probe TLSv1.1
+    try:
+        context = ssl._create_unverified_context()
+        context.options = ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_2
+        if hasattr(ssl, "OP_NO_TLSv1_3"):
+            context.options |= ssl.OP_NO_TLSv1_3
+        with socket.create_connection((hostname, port), timeout=2.0) as sock:
+            with context.wrap_socket(sock, server_hostname=hostname) as ssock:
+                if ssock.version() == "TLSv1.1":
+                    supported["TLSv1.1"] = True
+    except Exception:
+        pass
+
+    # Probe TLSv1.2
+    try:
+        context = ssl._create_unverified_context()
+        context.options = ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
+        if hasattr(ssl, "OP_NO_TLSv1_3"):
+            context.options |= ssl.OP_NO_TLSv1_3
+        with socket.create_connection((hostname, port), timeout=2.0) as sock:
+            with context.wrap_socket(sock, server_hostname=hostname) as ssock:
+                if ssock.version() == "TLSv1.2":
+                    supported["TLSv1.2"] = True
+    except Exception:
+        pass
+
+    # Probe TLSv1.3
+    try:
+        context = ssl._create_unverified_context()
+        context.options = (
+            ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 |
+            ssl.OP_NO_TLSv1_1 | ssl.OP_NO_TLSv1_2
+        )
+        with socket.create_connection((hostname, port), timeout=2.0) as sock:
+            with context.wrap_socket(sock, server_hostname=hostname) as ssock:
+                if ssock.version() == "TLSv1.3":
+                    supported["TLSv1.3"] = True
+    except Exception:
+        pass
+        
+    return supported
+
 def check_ssl(url):
     """
     Retrieves and audits the SSL/TLS certificate of the target host URL.
@@ -67,6 +136,7 @@ def check_ssl(url):
     tls_version = "None" # Negotiated TLS version
     key_strength = "Unknown"  # Cryptographic public key length
     sig_algorithm = "Unknown" # Certificate signature algorithm
+    tls_support = {"TLSv1.0": False, "TLSv1.1": False, "TLSv1.2": False, "TLSv1.3": False}
     
     # 2. Establish Default SSL context
     # create_default_context() loads the server's root Certificate Authority (CA) trust stores.
@@ -173,12 +243,24 @@ def check_ssl(url):
         ssl_enabled = False
         error_msg = f"Unexpected cryptographic failure: {str(e)}"
 
+    # If the host responded, actively probe its supported TLS versions
+    if ssl_enabled:
+        try:
+            tls_support = probe_tls_versions(hostname, port)
+        except Exception:
+            pass
+
     # Determine scoring impact (No SSL is -30, invalid is -20)
     score_impact = 0
     if not ssl_enabled:
         score_impact = 30
     elif not cert_valid:
         score_impact = 20
+        
+    # Deduct 10 points if insecure/legacy TLS 1.0 or 1.1 protocol versions are supported
+    legacy_protocols_supported = tls_support.get("TLSv1.0", False) or tls_support.get("TLSv1.1", False)
+    if legacy_protocols_supported:
+        score_impact += 10
 
     # Package output parameters
     return {
@@ -193,6 +275,8 @@ def check_ssl(url):
             "key_strength": key_strength,
             "days_remaining": max(0, days_remaining),
             "signature_algorithm": sig_algorithm,
+            "tls_support": tls_support,
+            "legacy_risk": legacy_protocols_supported,
             "error": error_msg
         }
     }

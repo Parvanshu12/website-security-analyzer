@@ -1,78 +1,61 @@
-# Website Security Analyzer
+# CyberGuard // Website Security Analyzer & Exploit Sandbox
 
-A comprehensive, learning-oriented, production-ready Website Security Analyzer built with Python standard library modules, Flask, and SQLite. The application executes active audits across network layers, HTTP headers, cryptographic certificates, DNS systems, registry databases, TCP ports, and infrastructure platforms.
+A lightweight, high-performance, learning-focused web security scanner and interactive playground. Built using **Python's standard library modules, Flask, and SQLite**, this application performs active audits across network protocols, certificate configurations, DNS entries, directory indexes, and host platforms. 
 
----
-
-## 🏗️ Architecture & Core Philosophy
-
-This project was built strictly without heavy third-party libraries (such as `requests` or `dnspython`). Instead, it relies entirely on native Python packages (`socket`, `ssl`, `urllib.request`, `subprocess`, `sqlite3`). 
-
-By enforcing this constraint:
-- **Low-Level Protocol Understanding:** We interact directly with TCP ports, parse SSL certificates from raw sockets, and query WHOIS registries via Port 43 TCP streams.
-- **Minimal Dependencies:** The system is lightweight, easy to run, and highly portable for production hosting on Linux or Windows.
-- **Defensive Design:** We implement core security principles directly in code to guard against common web vulnerabilities (SSRF, SQLi, Command Injection, DoS).
+It also features a sandboxed **HTTP Headers Exploitation Playground** that visually simulates client-side attacks (Clickjacking and Cross-Site Scripting) based on dynamic server header configurations.
 
 ---
 
-## 🔍 Phase-by-Phase Implementation Details
+## 🚀 Key Security Scanner Modules
 
-Here is a breakdown of what was built during each phase, why we did it, and the security or network concepts applied:
+The analyzer executes ten separate security evaluations divided into dedicated domains:
 
-### Phase 1: Flask Web Framework & SSRF Prevention
-* **What We Did:** Created the web application interface using Flask, CSS, and Jinja2 templates, processing target URLs via `POST` requests.
-* **Why We Did It:** Separated the client interface from the backend scanning engine. We validated inputs using `urllib.parse` to extract clean domain hosts.
-* **Security Control (SSRF Prevention):** An attacker might supply loopback addresses (like `http://127.0.0.1:8080/admin` or `http://169.254.169.254/`) to scan internal ports or cloud metadata. We block loopback subnets and non-web protocols (enforcing `http` or `https` only) to eliminate **Server-Side Request Forgery (SSRF)**.
-* **Security Control (XSS Prevention):** Used Jinja2 auto-escaping (`{{ value }}`) to neutralize HTML tags in user-supplied strings, preventing **Cross-Site Scripting (XSS)**.
+| Category | Scan Module | Networking / System Logic | Cybersecurity & Compliance Audited |
+| :--- | :--- | :--- | :--- |
+| **Headers** | HTTP Headers Auditor | `urllib.request` | Validates clickjacking (XFO/CSP), MIME-sniffing (nosniff), and downgrade protection (HSTS). |
+| **Cryptography** | TLS Handshake Prober | `ssl` socket wrapper | Verifies issuer trust chains, expiration dates, and probes support for legacy versions (`TLSv1.0`, `TLSv1.1`). |
+| **DNS** | Nameserver Resolver | Safe `subprocess` with `shell=False` | Resolves A, AAAA, MX, and validates SPF/DMARC anti-spoofing policies without command injection risk. |
+| **Registry** | Recursive WHOIS client | Raw sockets on TCP Port 43 | Queries IANA first, resolves authoritative TLD registry, and audits transfer locks (`clientTransferProhibited`). |
+| **Ports** | C-Style Port Prober | C-style `socket.connect_ex` | Scans key ports (SSH, FTP, DB, web) quickly with a 1.0s timeout to bypass socket exception overheads. |
+| **Host Info** | Technology Detector | Regular expressions & cookie grids | Scrapes response banners (`Server`, `X-Powered-By`) and cookies (`PHPSESSID`, `JSESSIONID`) to flag version leaks. |
+| **Discovery** | Subdomain Mapper | Concurrent Thread Resolution | Performs multi-threaded queries for sub-platforms (e.g. `dev`, `vpn`, `admin`) to map the attack surface. |
+| **Verbs** | HTTP Method Auditor | Custom verb request loops | Audits supported methods (`PUT`, `DELETE`, `TRACE`) to flag verb tampering and Cross-Site Tracking (XST) risks. |
+| **Threat Intel** | robots/security.txt Crawler | Document parsing regex | Parses `robots.txt` for sensitive directory exposures and validates presence of `security.txt` contacts. |
 
-### Phase 2: SQLite Ledger & SQLi Mitigation
-* **What We Did:** Implemented a persistent scan history ledger using SQLite, capped at exactly 50 records.
-* **Why We Did It:** Allowed users to view past scan results and reload them instantly without re-running socket scans.
-* **Security Control (SQL Injection Prevention):** Standard string concatenation in SQL queries (e.g. `SELECT * FROM scans WHERE id = ` + user_id) allows attackers to inject database commands. We use **parameterized queries** (`?` placeholders) and cast keys to integers to ensure the database engine treats input strictly as literal values.
-* **Security Control (DoS & Disk Exhaustion Prevention):** To prevent malicious bots from filling the server's hard drive by scanning millions of pages, we created an automated database pruning system. Every new scan triggers a query that locates the ID of the 50th newest record and deletes all records older than it.
+---
 
-### Phase 3: HTTP Security Headers Auditor
-* **What We Did:** Built `modules/header_scanner.py` to fetch headers from target domains and audit modern security configuration tags.
-* **Why We Did It:** Web browsers use headers to apply security rules. Missing headers leave users exposed to client-side attacks.
-* **Audited Protections:**
-  - **`X-Frame-Options` & `CSP (frame-ancestors)`:** Prevents **Clickjacking** by stopping external domains from rendering this site in an invisible iframe.
-  - **`X-Content-Type-Options: nosniff`:** Prevents **MIME-Sniffing** attacks where browsers interpret assets (like stylesheets or images) as executable JavaScript.
-  - **`Strict-Transport-Security` (HSTS):** Mitigates **SSL Strip/HTTP Downgrade** attacks by forcing browsers to connect only via HTTPS.
-  - **`Content-Security-Policy` (CSP):** Restricts script sources to protect users from XSS payloads.
+## 🎮 The Interactive Exploit Playground
 
-### Phase 4: SSL/TLS Certificate Analyzer
-* **What We Did:** Programmed `modules/ssl_checker.py` using Python's native `ssl` and `socket` modules to perform cryptographic handshakes.
-* **Why We Did It:** Validating certificate configurations ensures that data transmitted between clients and the server is encrypted securely and trusted.
-* **Audited Protections:**
-  - **Trust Chain Integrity:** Validates that the certificate common name (CN) matches the target domain, and checks whether the issuing Certificate Authority (CA) is recognized.
-  - **Expiration Check:** Extracts and parses date strings to notify administrators of expired or expiring certificates.
-  - **Man-in-the-Middle (MitM) Defense:** Detects self-signed or invalid certificates that could allow attackers to intercept and read sensitive traffic.
+The playground provides a split-screen educational sandbox displaying how browser client protections behave under different header states:
 
-### Phase 5: DNS Records & Command Injection Safety
-* **What We Did:** Built `modules/dns_checker.py` to resolve network routing and security records (`A`, `AAAA`, `MX`, `TXT`/SPF/DMARC) using native system commands.
-* **Why We Did It:** Auditing DNS settings exposes network routing configurations and validates domain anti-spoofing policies.
-* **Security Control (Command Injection Prevention):** Running system commands like `nslookup` using Python's `subprocess.Popen(..., shell=True)` with unescaped string concatenations allows attackers to append arbitrary command strings (e.g., `; rm -rf /`). We set `shell=False` and pass arguments as a structured array list, which prompts the Operating System to execute the command directly, neutralizing all shell command separators.
-* **Spoofing Defense Validation:** Inspects SPF and DMARC TXT records to ensure the domain is hardened against email phishing and spoofing.
+1. **Clickjacking Simulation:** Students adjust `X-Frame-Options` (`None`, `SAMEORIGIN`, `DENY`), load the vulnerable banking portal, and deploy a transparent overlay. They can observe how clicks are hijacked when protection is missing versus how the browser blocks rendering when headers are active.
+2. **CSP Bypass Simulation:** Injects script payloads into reflected query parameters. Students observe how strict Content-Security-Policies (`default-src 'self'`) block inline code execution versus how legacy or missing configurations allow cookies to be extracted.
 
-### Phase 6: Recursive WHOIS Registry Scanner
-* **What We Did:** Built a raw TCP Port 43 client in `modules/whois_checker.py` that queries domain registries to find registration details.
-* **Why We Did It:** Domain ownership, registry locks, and expiration dates are key markers for evaluating domain trust.
-* **Networking Concept (Recursive Querying):** Different top-level domains (TLDs) have different registries. The analyzer queries `whois.iana.org` first, parses the response to find the authoritative registrar WHOIS server for that TLD, opens a second TCP socket connection to that registrar, and extracts domain creation, update, and registry lock statuses.
-* **Domain Hijacking Check:** Verifies if flags like `clientTransferProhibited` are active, ensuring the domain is locked against unauthorized transfer attempts.
+---
 
-### Phase 7: C-Style TCP Port Scanner
-* **What We Did:** Programmed `modules/port_scanner.py` using sockets to scan common administrative, database, and web ports.
-* **Why We Did It:** Open administrative ports (like SSH, Telnet, or FTP) are primary targets for brute-force attacks.
-* **Networking Concept (connect_ex):** Traditional socket connections throw exceptions when a port is closed, adding severe CPU overhead. We use C-style `socket.connect_ex` which returns status codes directly (0 for open, non-zero for closed/filtered), bypassing exception handling and increasing scan speeds.
-* **Resource Starvation Prevention:** Enforces a strict 1.0-second timeout per port to prevent threads from locking up on firewalled ports.
+## 🛡️ Vulnerability Mitigation Matrix
 
-### Phase 8: Production Tech Stack Detector & Version Leaks
-* **What We Did:** Coded `modules/tech_detector.py` to identify backend web servers, programming frameworks, and CMS deployments.
-* **Why We Did It:** Exposing names and versions of backend software allows attackers to query CVE databases for known public exploits.
-* **Audit Mechanics:**
-  - **Banner Grabbing:** Uses regular expressions to extract `Server` and `X-Powered-By` headers. Version disclosures (e.g., `nginx/1.24.0`) are flagged as vulnerability warnings.
-  - **Cookie Signatures:** Audits cookies like `PHPSESSID` (PHP), `JSESSIONID` (Java), and `ASP.NET_SessionId` (Microsoft IIS) to identify the framework even when headers are stripped.
-  - **HTML Meta Tag Scraping:** Scrapes raw HTML for `<meta name="generator" content="...">` to identify WordPress, Drupal, or other CMS version layers.
+We implement defensive programming best practices directly in code to avoid standard web vulnerabilities:
+
+- **Server-Side Request Forgery (SSRF) Prevention:** Inputs are validated using `urllib.parse`. Loopback subnets (`127.0.0.1`, `localhost`, `169.254.*.*`) and internal network IPs are strictly blocked to prevent the server from scanning internal assets.
+- **SQL Injection (SQLi) Prevention:** SQLite interactions use parameterized queries (`?` placeholders) and enforce strict key casting (e.g. `int(history_id)`), ensuring user inputs are treated as literal strings, not query instructions.
+- **Command Injection Prevention:** DNS queries invoke system utilities using `subprocess.Popen` with `shell=False`. Arguments are passed as structured lists, neutralizing shell command separators (like `;` or `&&`).
+- **Denial of Service (DoS) Prevention:** The scan ledger caps records at exactly 50 items. Every scan triggers a deterministic SQLite pruning query to delete records older than the 50th item, protecting server disk space from exhaustion.
+- **Cross-Site Scripting (XSS) Prevention:** Output rendering uses Jinja2 auto-escaping to convert HTML characters into safe codes, neutralizing payload injections.
+
+---
+
+## 🔍 Phase-by-Phase Summary
+
+- **Phase 1: Flask Web Framework & SSRF Prevention** — Setup routing, templates, and strict URL protocol normalization.
+- **Phase 2: SQLite Ledger & SQLi Mitigation** — Created the history system, query parameterization, and automated table pruning.
+- **Phase 3: HTTP Security Headers Auditor** — Probed browser safety tags (Clickjacking, MIME, SSL strip protection).
+- **Phase 4: SSL/TLS Certificate Analyzer** — Extracted cert parameters (expiry, CA issuer) using native socket contexts.
+- **Phase 5: DNS Records & Safe Shell Probes** — Safe multi-record system resolutions to evaluate SPF/DMARC spoofing protections.
+- **Phase 6: Recursive WHOIS Registry Scanner** — Raw TCP Port 43 client traversing TLD referrers to audit registrar locks.
+- **Phase 7: C-Style TCP Port Scanner** — Rapid connect checks targeting admin/DB ports using error code returns.
+- **Phase 8: Tech Stack Fingerprinter & Version Leaks** — Scraped server signatures and session cookie names for CVE vulnerability matching.
+- **Phase 9: Advanced Cryptography, Scanners & Exploit Playground** — Added TLS protocol support audits, subdomain mapping, verb tampering checks, threat intel crawler, and the HTML/JS exploit simulation playground.
 
 ---
 
@@ -81,45 +64,86 @@ Here is a breakdown of what was built during each phase, why we did it, and the 
 ```
 Website Security Scanner/
 │
-├── app.py                     # Main Flask router & Secure controller
-├── modules/                   # Active security scanning engines
+├── app.py                      # Main Flask router, controllers, and database caps
+├── modules/                    # Security scanning modules
 │   ├── __init__.py
-│   ├── header_scanner.py      # HTTP response header checks
-│   ├── ssl_checker.py         # Cryptographic trust chain validator
-│   ├── dns_checker.py         # Command-injection safe DNS resolver
-│   ├── whois_checker.py       # Recursive TCP Port 43 WHOIS parser
-│   ├── port_scanner.py        # C-style connect_ex TCP port scanner
-│   └── tech_detector.py       # Banner grabbing & Cookie fingerprinter
+│   ├── header_scanner.py       # Audits response safety headers
+│   ├── ssl_checker.py          # Cryptographic handshake, TLS & cipher checker
+│   ├── dns_checker.py          # Command-injection safe DNS lookup tool
+│   ├── whois_checker.py        # Recursive WHOIS parser querying registrar sockets
+│   ├── port_scanner.py         # C-style connect_ex port scanner
+│   ├── tech_detector.py        # Banner scraping and cookie analyzer
+│   ├── subdomain_scanner.py    # Multi-threaded subdomain DNS brute-forcer
+│   ├── verb_auditor.py         # HTTP verb tampering & TRACE/XST check module
+│   └── threat_intelligence.py  # Robots.txt / security.txt parser
 │
 ├── database/
-│   └── scan_history.db        # SQLite database (capped at 50 records)
+│   └── scan_history.db         # SQLite database file
 │
 ├── templates/
-│   └── index.html             # Premium glassmorphism dark UI dashboard
+│   ├── index.html              # Main security audit console layout
+│   ├── playground.html         # Exploit playground parent configuration panel
+│   └── playground_target.html  # Vulnerable target bank application layout
 │
 ├── static/
-│   └── style.css              # Cyberpunk UI stylesheet
+│   └── style.css               # Dark cyberpunk theme stylesheets
 │
-├── .gitignore                 # Configured git exclusions (db, logs, cache)
-└── README.md                  # Comprehensive project documentation
+├── .gitignore                  # Git exclusions configuration
+└── README.md                   # Full deployment & documentation manual
 ```
 
 ---
 
-## 🚀 How to Run the App
+## 🚀 Installation & Local Deployment
 
-1. **Verify Python is installed:**
+1. **Clone or Download the Repository:**
+   ```bash
+   git clone https://github.com/Parvanshu12/website-security-analyzer.git
+   cd website-security-analyzer
+   ```
+
+2. **Verify Python Installation:**
    ```powershell
    python --version
    ```
 
-2. **Run the Flask application:**
+3. **Install Dependencies:**
+   Ensure Flask is installed in your python environment:
+   ```powershell
+   pip install Flask
+   ```
+
+4. **Launch the Application:**
    ```powershell
    python app.py
    ```
 
-3. **Navigate to the web dashboard:**
-   Open your browser and go to **[http://127.0.0.1:5000](http://127.0.0.1:5000)**.
+5. **Interact via Browser:**
+   - **Main Security Scanner:** Navigate to **[http://127.0.0.1:5000](http://127.0.0.1:5000)**.
+   - **Exploit Playground:** Navigate to **[http://127.0.0.1:5000/playground](http://127.0.0.1:5000/playground)**.
 
-4. **Verify educational files:**
-   Review the `education_phase*.md` files in the project root. These files provide deep dive guides into the systems, cryptography, and protocols driving each security module.
+---
+
+## 🌐 Push Updates to GitHub
+
+To commit these new Phase 9 feature upgrades and push them to your repository on GitHub:
+
+1. **Verify Git Status:**
+   ```powershell
+   git status
+   ```
+
+2. **Stage New Files:**
+   ```powershell
+   git add .
+   ```
+
+3. **Commit Upgrades:**
+   ```powershell
+   git commit -m "Implement Phase 9: Active TLS protocol auditing, subdomain brute-forcing, HTTP verb checking, threat crawler, and Exploit Playground"
+   ```
+
+4. **Push to Remote:**
+   ```powershell
+   git push origin main
+   ```

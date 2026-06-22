@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberGuard // Exploit Playground</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Specific page styles for the split-panel simulation playground */
+        .playground-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+        @media (max-width: 968px) {
+            .playground-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .config-section {
+            margin-bottom: 1.5rem;
+        }
+        .select-wrapper {
+            position: relative;
+            margin-top: 0.5rem;
+        }
+        .select-wrapper select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--color-text);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            appearance: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .select-wrapper select:focus {
+            outline: none;
+            border-color: var(--color-cyan);
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.25);
+        }
+        .select-wrapper::after {
+            content: "▼";
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+        .frame-preview-container {
+            position: relative;
+            background: rgba(15, 23, 42, 0.8);
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            height: 380px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        .frame-preview-container.active-border {
+            border-color: var(--color-cyan);
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.15);
+        }
+        .sim-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #ffffff;
+            transition: opacity 0.3s ease;
+        }
+        .clickjack-overlay-fake {
+            position: absolute;
+            top: 155px; /* Aligns exactly with the vulnerable iframe deposit cash button */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            padding: 0.6rem 2.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border: none;
+            background: var(--gradient-primary);
+            color: #ffffff;
+            animation: pulse-glow 2s infinite;
+        }
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(6, 182, 212, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+        }
+        .playground-terminal {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: #10b981;
+            margin-top: 1.5rem;
+            max-height: 150px;
+            overflow-y: auto;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+        .playground-terminal p {
+            margin: 0.25rem 0;
+        }
+        .exploit-card {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .exploit-card h4 {
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .overlay-opacity-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 0.75rem;
+        }
+        .slider {
+            flex-grow: 1;
+            accent-color: var(--color-cyan);
+        }
+        .status-pill-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .status-sim-card {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 0.75rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .status-sim-card h5 {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 0.25rem;
+        }
+        .status-active-badge {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+        .hidden-target {
+            opacity: 0.3; /* Default opacity for clickjacking demonstration */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glow-bg">
+        <div class="blob blob-cyan"></div>
+        <div class="blob blob-blue"></div>
+    </div>
+
+    <div class="container">
+        
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <span class="logo-icon">🛡️</span>
+                <h1 class="logo-text">CYBER<span class="highlight">GUARD</span></h1>
+            </div>
+            <p class="subtitle">Passive & Active Web Vulnerability Reconnaissance Console</p>
+            <nav class="app-nav">
+                <a href="/" class="nav-link">🔍 Security Scanner</a>
+                <a href="/playground" class="nav-link active">🎮 Exploit Playground</a>
+            </nav>
+        </header>
+
+        <main class="main-content">
+            <section class="card glassmorphism">
+                <div class="card-header border-glow">
+                    <span class="console-status-dot"></span>
+                    <h3>Interactive HTTP Headers Exploitation Sandbox</h3>
+                </div>
+                
+                <div class="card-body">
+                    <p style="color: rgba(255, 255, 255, 0.7); line-height: 1.5;">
+                        Welcome to the Header Exploitation Sandbox! Here, you can configure web security headers and instantly observe how attackers bypass protections when headers are missing or misconfigured. Adjust parameters below, load the target, and test the vulnerability scripts.
+                    </p>
+
+                    <div class="playground-grid">
+                        
+                        <!-- Left Panel: Configurations and Attacks -->
+                        <div class="playground-controls-panel">
+                            
+                            <!-- Server Header Configuration Card -->
+                            <div class="exploit-card" style="background: rgba(6, 182, 212, 0.02); border-color: rgba(6, 182, 212, 0.1);">
+                                <h4 class="text-cyan">⚙️ Server HTTP Header Configuration</h4>
+                                
+                                <div class="config-section">
+                                    <label style="font-size: 0.85rem; color: rgba(255,255,255,0.7);">X-Frame-Options (Clickjacking Protection)</label>
+                                    <div class="select-wrapper">
+                                        <select id="xfo-select">
+                                            <option value="None">None (Default - Vulnerable)</option>
+                                            <option value="SAMEORIGIN">SAMEORIGIN (Restricted to same origin)</option>
+                                            <option value="DENY">DENY (Blocked completely from iframes)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="config-section">
+                                    <label style="font-size: 0.85rem; color: rgba(255,255,255,0.7);">Content-Security-Policy (CSP Script Restrictions)</label>
+                                    <div class="select-wrapper">
+                                        <select id="csp-select">
+                                            <option value="None">None (Default - Vulnerable to inline scripts)</option>
+                                            <option value="unsafe-inline">script-src 'self' 'unsafe-inline' (Allows local scripts)</option>
+                                            <option value="self">default-src 'self' (Strict policy - blocks inline scripts)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <button type="button" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" onclick="reloadSandboxFrame()">
+                                    <span>Apply Config & Deploy Target</span>
+                                    <span>⚡</span>
+                                </button>
+                            </div>
+
+                            <!-- Exploit Vector 1: Clickjacking -->
+                            <div class="exploit-card">
+                                <h4 class="text-yellow">🎯 Exploit 1: Clickjacking Overlay Attack</h4>
+                                <p style="font-size: 0.85rem; color: rgba(255,255,255,0.6); line-height: 1.4;">
+                                    If <code>X-Frame-Options</code> is missing, an attacker can load the target inside an invisible iframe overlaying a malicious page (e.g. "You won a prize!"). When the user clicks the fake button, they actually trigger actions in the hidden frame underneath (like depositing/transferring money).
+                                </p>
+                                
+                                <div class="overlay-opacity-controls">
+                                    <span style="font-size: 0.8rem; white-space: nowrap;">Frame Opacity:</span>
+                                    <input type="range" min="0" max="100" value="30" class="slider" id="opacity-slider" oninput="adjustFrameOpacity(this.value)">
+                                    <span id="opacity-val" style="font-size: 0.8rem; width: 30px;">30%</span>
+                                </div>
+
+                                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                                    <button type="button" class="btn" style="flex: 1; font-size: 0.85rem;" onclick="toggleClickjackingOverlay(true)">
+                                        Deploy Fake Button
+                                    </button>
+                                    <button type="button" class="btn" style="flex: 1; font-size: 0.85rem; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2);" onclick="toggleClickjackingOverlay(false)">
+                                        Clear Overlay
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Exploit Vector 2: XSS Injection -->
+                            <div class="exploit-card">
+                                <h4 class="text-red">💉 Exploit 2: Cross-Site Scripting (XSS)</h4>
+                                <p style="font-size: 0.85rem; color: rgba(255,255,255,0.6); line-height: 1.4;">
+                                    Without a robust <code>Content-Security-Policy</code> (CSP), the browser will execute inline JavaScript injected into query parameters.
+                                </p>
+                                
+                                <div style="margin-top: 0.75rem;">
+                                    <input type="text" id="xss-payload-input" 
+                                           style="width: 100%; padding: 0.6rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color:#fff; font-family: monospace; font-size: 0.8rem;" 
+                                           value="&lt;script&gt;try{parent.triggerXSSSuccess();}catch(e){}&lt;/script&gt;">
+                                </div>
+
+                                <button type="button" class="btn" style="width: 100%; margin-top: 0.75rem; background: rgba(239, 68, 68, 0.1); border-color: var(--color-red);" onclick="injectXSSPayload()">
+                                    Inject & Run XSS Script
+                                </button>
+                            </div>
+
+                        </div>
+
+                        <!-- Right Panel: Sandbox Target & Status Console -->
+                        <div class="playground-sandbox-panel">
+                            <h4 style="margin-bottom: 0.5rem;">🖥️ Live Target Sandbox (Iframe View)</h4>
+                            
+                            <div class="frame-preview-container" id="sandbox-container">
+                                <!-- The target site will be embedded here -->
+                                <iframe id="sandbox-frame" class="sim-iframe hidden-target" src="/playground/simulate" onload="onFrameLoad()"></iframe>
+                                <!-- Dynamic clickjacking button overlays will spawn here -->
+                            </div>
+
+                            <div class="status-pill-grid">
+                                <div class="status-sim-card">
+                                    <h5>Frame Nesting (Clickjacking)</h5>
+                                    <div id="status-clickjack" class="status-active-badge text-green">Allowed (Vulnerable)</div>
+                                </div>
+                                <div class="status-sim-card">
+                                    <h5>XSS Script Status</h5>
+                                    <div id="xss-status" class="status-active-badge text-green">Blocked / Inactive</div>
+                                </div>
+                            </div>
+
+                            <div class="playground-terminal" id="sim-terminal">
+                                <p>[SYSTEM] Sandbox environment boot active...</p>
+                                <p>[SYSTEM] Ready for deployment instructions.</p>
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <footer class="app-footer">
+            <p>&copy; 2026 CyberGuard Education Console. Dedicated to excellence in web penetration testing & defensive engineering.</p>
+        </footer>
+    </div>
+
+    <!-- Playground Interactive Scripts -->
+    <script>
+        const terminal = document.getElementById('sim-terminal');
+        const frame = document.getElementById('sandbox-frame');
+        const statusClickjack = document.getElementById('status-clickjack');
+        const statusXSS = document.getElementById('xss-status');
+        const container = document.getElementById('sandbox-container');
+
+        function printLog(message) {
+            const p = document.createElement('p');
+            p.innerText = `[${new Date().toLocaleTimeString()}] ${message}`;
+            terminal.appendChild(p);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // Adjust opacity of the target iframe to show how an attacker hides the target site behind a fake UI
+        function adjustFrameOpacity(val) {
+            frame.style.opacity = val / 100;
+            document.getElementById('opacity-val').innerText = `${val}%`;
+            printLog(`[UI] Iframe opacity adjusted to ${val}%`);
+        }
+
+        // Toggles a fake button overlay on top of the iframe to demonstrate clickjacking
+        function toggleClickjackingOverlay(active) {
+            // Remove existing overlay buttons if any
+            const existing = document.getElementById('fake-prize-button');
+            if (existing) existing.remove();
+
+            if (active) {
+                const btn = document.createElement('button');
+                btn.id = 'fake-prize-button';
+                btn.className = 'clickjack-overlay-fake';
+                btn.innerText = 'CLAIM FREE PRIZE 🎁';
+                
+                // Add event listener to demonstrate when the fake button is clicked
+                btn.addEventListener('click', function() {
+                    printLog(`[ATTACK] User clicked 'CLAIM FREE PRIZE'!`);
+                    alert("Clickjacking Triggered! You clicked the fake 'Claim Prize' overlay, but in a real attack, this click would register on the hidden iframe behind it (depositing money/submitting forms).");
+                });
+
+                container.appendChild(btn);
+                printLog(`[UI] Malicious overlay button deployed over iframe layout.`);
+            } else {
+                printLog(`[UI] Malicious overlay button cleared.`);
+            }
+        }
+
+        // Reload the sandbox target iframe with selected headers
+        function reloadSandboxFrame() {
+            const xfo = document.getElementById('xfo-select').value;
+            const csp = document.getElementById('csp-select').value;
+            
+            // Clear statuses
+            statusXSS.innerText = "Blocked / Inactive";
+            statusXSS.className = "status-active-badge text-green";
+            
+            printLog(`[CONFIG] Deploying target with X-Frame-Options: ${xfo}, CSP: ${csp}...`);
+            
+            // Reconstruct URL with target arguments
+            const url = `/playground/simulate?xfo=${xfo}&csp=${csp}`;
+            frame.src = url;
+        }
+
+        // Triggered when the iframe finishes loading
+        function onFrameLoad() {
+            const xfo = document.getElementById('xfo-select').value;
+            printLog(`[SYSTEM] Target iframe loaded successfully.`);
+
+            // Check if X-Frame-Options is set to block rendering inside frame
+            // In a real browser, DENY and SAMEORIGIN (if cross-origin) will block rendering.
+            // Since we are same-origin here, SAMEORIGIN allows it. If it is DENY, modern browsers block it.
+            // We simulate the status indicator for educational purposes.
+            if (xfo === 'DENY') {
+                statusClickjack.innerText = "Blocked (Secure)";
+                statusClickjack.className = "status-active-badge text-red";
+                printLog(`[SECURE] Browser security policy: Nesting blocked by X-Frame-Options: DENY.`);
+            } else if (xfo === 'SAMEORIGIN') {
+                statusClickjack.innerText = "Allowed (Same-Origin Only)";
+                statusClickjack.className = "status-active-badge text-yellow";
+                printLog(`[WARN] Nesting allowed for local domains (SAMEORIGIN).`);
+            } else {
+                statusClickjack.innerText = "Allowed (Vulnerable)";
+                statusClickjack.className = "status-active-badge text-green";
+                printLog(`[VULNERABLE] Clickjacking active: No X-Frame-Options found.`);
+            }
+        }
+
+        // Triggered when XSS injection succeeds
+        function triggerXSSSuccess() {
+            statusXSS.innerText = "Triggered! (Vulnerable)";
+            statusXSS.className = "status-active-badge text-red";
+            printLog(`[ATTACK] XSS Script Executed! Inline JavaScript injection succeeded.`);
+            alert("XSS Vulnerability Active! The injected script successfully bypassed the CSP and executed in the user context.");
+        }
+
+        // Inject script payload into target frame via URL query parameters
+        function injectXSSPayload() {
+            const xfo = document.getElementById('xfo-select').value;
+            const csp = document.getElementById('csp-select').value;
+            const payload = document.getElementById('xss-payload-input').value;
+            
+            printLog(`[ATTACK] Injecting script payload...`);
+            
+            // Reload target frame with payload query argument
+            const encodedPayload = encodeURIComponent(payload);
+            const url = `/playground/simulate?xfo=${xfo}&csp=${csp}&xss=${encodedPayload}`;
+            frame.src = url;
+            
+            // Check if CSP blocks it
+            // We set a short timeout. If triggerXSSSuccess is not called, it means CSP blocked it
+            setTimeout(function() {
+                if (statusXSS.innerText !== "Triggered! (Vulnerable)") {
+                    if (csp === 'self') {
+                        printLog(`[SECURE] CSP Blocked Script: default-src 'self' successfully neutralized the inline script.`);
+                        statusXSS.innerText = "Blocked (Secure)";
+                        statusXSS.className = "status-active-badge text-green";
+                    } else {
+                        printLog(`[SYSTEM] Script loaded but did not execute or was blocked.`);
+                    }
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

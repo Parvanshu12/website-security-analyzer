@@ -41,6 +41,9 @@ from modules.dns_checker import check_dns
 from modules.whois_checker import check_whois
 from modules.port_scanner import scan_ports
 from modules.tech_detector import detect_tech
+from modules.subdomain_scanner import scan_subdomains
+from modules.verb_auditor import audit_verbs
+from modules.threat_intelligence import scan_threat_intel
 
 # FLASK CONCEPT - Application Instance:
 # We instantiate the Flask class. The '__name__' variable is a special built-in Python variable
@@ -250,7 +253,7 @@ def validate_and_normalize_url(url_input):
 # ==============================================================================
 # Helper Function: Cyber Security Grading Algorithm
 # ==============================================================================
-def calculate_security_grade(header_res, ssl_res, dns_res, tech_res):
+def calculate_security_grade(header_res, ssl_res, dns_res, tech_res, subdomain_res, verb_res, threat_intel_res):
     """
     Computes an aggregated numerical score (0-100) and letter grade (A-F) based
     on security scanner findings.
@@ -270,6 +273,10 @@ def calculate_security_grade(header_res, ssl_res, dns_res, tech_res):
         score -= 20  # Expired certificates generate browser warnings.
     elif ssl_details.get("days_remaining", 0) < 30:
         score -= 5   # Warning state if it is expiring soon.
+        
+    # Deduct points if the server supports legacy/insecure protocol versions
+    if ssl_details.get("legacy_risk", False):
+        score -= 10
 
     # 3. DNS Security Checklist Deductions
     dns_records = dns_res.get("records", {})
@@ -282,6 +289,15 @@ def calculate_security_grade(header_res, ssl_res, dns_res, tech_res):
     for tech, data in tech_list.items():
         if not data.get("secure") and "exposed" in data.get("notes", "").lower():
             score -= 5  # minor warning for software banner disclosure.
+
+    # 5. Active Subdomains Discovery Deductions
+    score -= subdomain_res.get("score_impact", 0)
+
+    # 6. HTTP Verb Tampering / XST Deductions
+    score -= verb_res.get("score_impact", 0)
+
+    # 7. Threat Intel (robots/security.txt) Deductions
+    score -= threat_intel_res.get("score_impact", 0)
 
     # Keep the score within bounds [0, 100]
     score = max(0, min(score, 100))
@@ -379,12 +395,15 @@ def home():
                 if headers_results.get("status") == "failed":
                     error_message = headers_results.get("error")
                 else:
-                    # Run other mock modules (SSL, DNS, Ports, Tech stack)
+                    # Run other active modules (SSL, DNS, Ports, Tech stack, and new modules)
                     ssl_results = check_ssl(scanned_url)
                     dns_results = check_dns(scanned_url)
                     whois_results = check_whois(scanned_url)
                     ports_results = scan_ports(scanned_url)
                     tech_results = detect_tech(scanned_url)
+                    subdomain_results = scan_subdomains(scanned_url)
+                    verb_results = audit_verbs(scanned_url)
+                    threat_intel_results = scan_threat_intel(scanned_url)
 
                     scan_duration = round(time.time() - start_time, 2)
 
@@ -393,7 +412,10 @@ def home():
                         headers_results, 
                         ssl_results, 
                         dns_results, 
-                        tech_results
+                        tech_results,
+                        subdomain_results,
+                        verb_results,
+                        threat_intel_results
                     )
 
                     # Package findings together
@@ -408,7 +430,10 @@ def home():
                         "dns": dns_results,
                         "whois": whois_results,
                         "ports": ports_results,
-                        "tech": tech_results
+                        "tech": tech_results,
+                        "subdomains": subdomain_results,
+                        "verbs": verb_results,
+                        "threat_intel": threat_intel_results
                     }
 
                     results_json = json.dumps(results_payload)
@@ -449,6 +474,51 @@ def home():
         url_input=request.form.get("url", ""),
         recent_scans=recent_scans
     )
+
+
+# ==============================================================================
+# Exploit Playground Routes (Phase 9)
+# ==============================================================================
+@app.route("/playground", methods=["GET"])
+def playground():
+    """
+    Renders the parent dashboard for the Interactive Exploit Playground.
+    Allows students to experiment with headers and observe attacks.
+    """
+    return render_template("playground.html")
+
+
+@app.route("/playground/simulate", methods=["GET"])
+def playground_simulate():
+    """
+    A simulated endpoint that applies HTTP headers dynamically based on query options.
+    Enables visual demonstrations of clickjacking and CSP blocks inside the browser.
+    """
+    xfo = request.args.get("xfo", "None")
+    csp = request.args.get("csp", "None")
+    xcto = request.args.get("xcto", "None")
+    xss_payload = request.args.get("xss", "")
+
+    # We make a response object from the template
+    # Let's ensure the response behaves like a target bank portal
+    response = app.make_response(render_template("playground_target.html", xss_payload=xss_payload))
+
+    # Apply headers dynamically based on URL parameter options
+    if xfo == "DENY":
+        response.headers["X-Frame-Options"] = "DENY"
+    elif xfo == "SAMEORIGIN":
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+
+    if csp == "self":
+        response.headers["Content-Security-Policy"] = "default-src 'self'"
+    elif csp == "unsafe-inline":
+        # Allow default-src self, but also allow inline scripts for simulation
+        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'"
+
+    if xcto == "nosniff":
+        response.headers["X-Content-Type-Options"] = "nosniff"
+
+    return response
 
 
 # ==============================================================================

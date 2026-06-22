@@ -187,6 +187,43 @@ body {
     letter-spacing: 0.5px;
 }
 
+/* Navigation menu style */
+.app-nav {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+    color: var(--color-text-primary);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.nav-link.active {
+    color: #ffffff;
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.15) 0%, rgba(79, 254, 254, 0.05) 100%);
+    border-color: var(--color-primary-cyan);
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.25);
+}
+
 /* -----------------------------------------------------------------------------
    6. Premium Glassmorphism Panels (Cards)
    ----------------------------------------------------------------------------- */
