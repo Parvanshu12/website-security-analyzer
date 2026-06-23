@@ -656,6 +656,7 @@ input[type="text"]:focus {
 .badge-success { background-color: rgba(0, 245, 160, 0.15); color: var(--color-green); border: 1px solid rgba(0, 245, 160, 0.3); }
 .badge-warning { background-color: rgba(255, 210, 0, 0.15); color: var(--color-yellow); border: 1px solid rgba(255, 210, 0, 0.3); }
 .badge-error { background-color: rgba(255, 51, 102, 0.15); color: var(--color-red); border: 1px solid rgba(255, 51, 102, 0.3); }
+.badge-info { background-color: rgba(79, 172, 254, 0.15); color: var(--color-primary-blue); border: 1px solid rgba(79, 172, 254, 0.3); }
 
 /* Tables used in Port Scanner */
 .report-table {

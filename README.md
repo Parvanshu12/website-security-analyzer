@@ -47,15 +47,15 @@ We implement defensive programming best practices directly in code to avoid stan
 
 ## 🔍 Phase-by-Phase Summary
 
-- **Phase 1: Flask Web Framework & SSRF Prevention** — Setup routing, templates, and strict URL protocol normalization.
-- **Phase 2: SQLite Ledger & SQLi Mitigation** — Created the history system, query parameterization, and automated table pruning.
-- **Phase 3: HTTP Security Headers Auditor** — Probed browser safety tags (Clickjacking, MIME, SSL strip protection).
-- **Phase 4: SSL/TLS Certificate Analyzer** — Extracted cert parameters (expiry, CA issuer) using native socket contexts.
-- **Phase 5: DNS Records & Safe Shell Probes** — Safe multi-record system resolutions to evaluate SPF/DMARC spoofing protections.
-- **Phase 6: Recursive WHOIS Registry Scanner** — Raw TCP Port 43 client traversing TLD referrers to audit registrar locks.
-- **Phase 7: C-Style TCP Port Scanner** — Rapid connect checks targeting admin/DB ports using error code returns.
-- **Phase 8: Tech Stack Fingerprinter & Version Leaks** — Scraped server signatures and session cookie names for CVE vulnerability matching.
-- **Phase 9: Advanced Cryptography, Scanners & Exploit Playground** — Added TLS protocol support audits, subdomain mapping, verb tampering checks, threat intel crawler, and the HTML/JS exploit simulation playground.
+- **Phase 1: Flask Web Framework & SSRF Prevention** — Setup routing, templates, and strict URL protocol normalization. (See [education_phase1_flask.md](education_phase1_flask.md))
+- **Phase 2: SQLite Ledger & SQLi Mitigation** — Created the history system, query parameterization, and automated table pruning. (See [education_phase2_db.md](education_phase2_db.md))
+- **Phase 3: HTTP Security Headers Auditor** — Probed browser safety tags (Clickjacking, MIME, SSL strip protection). (See [education_phase3_headers.md](education_phase3_headers.md))
+- **Phase 4: SSL/TLS Certificate Analyzer** — Extracted cert parameters (expiry, CA issuer) using native socket contexts. (See [education_phase4_ssl.md](education_phase4_ssl.md))
+- **Phase 5: DNS Records & Safe Shell Probes** — Safe multi-record system resolutions to evaluate SPF/DMARC spoofing protections. (See [education_phase5_dns.md](education_phase5_dns.md))
+- **Phase 6: Recursive WHOIS Registry Scanner** — Raw TCP Port 43 client traversing TLD referrers to audit registrar locks. (See [education_phase6_whois.md](education_phase6_whois.md))
+- **Phase 7: C-Style TCP Port Scanner** — Rapid connect checks targeting admin/DB ports using error code returns. (See [education_phase7_portscan.md](education_phase7_portscan.md))
+- **Phase 8: Tech Stack Fingerprinter & Version Leaks** — Scraped server signatures and session cookie names for CVE vulnerability matching. (See [education_phase8_techdetect.md](education_phase8_techdetect.md))
+- **Phase 9: Advanced Cryptography, Scanners & Exploit Playground** — Added TLS protocol support audits, subdomain mapping, verb tampering checks, threat intel crawler, and the HTML/JS exploit simulation playground. (See [education_phase9_advanced.md](education_phase9_advanced.md))
 
 ---
 

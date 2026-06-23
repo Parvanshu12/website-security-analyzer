@@ -256,6 +256,32 @@ by preventing attackers from injecting raw executable JavaScript code into input
                                     <li><strong>Certificate Age:</strong> <span>{{ results.ssl.details.days_remaining }} Days Remaining</span></li>
                                     <li><strong>Signing Hashing:</strong> <span class="monospaced">{{ results.ssl.details.signature_algorithm }}</span></li>
                                 </ul>
+
+                                {% if results.ssl.details.tls_support %}
+                                <div class="tls-matrix-container" style="margin-top: 1rem;">
+                                    <strong style="font-size: 0.85rem; color: var(--color-text-secondary);">TLS Protocol Support Matrix:</strong>
+                                    <div class="tls-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-top: 0.5rem;">
+                                        {% for proto, supported in results.ssl.details.tls_support.items() %}
+                                        <div class="tls-item" style="text-align: center; padding: 0.4rem; border-radius: 6px; background: rgba(8, 12, 24, 0.4); border: 1px solid {% if supported %}{% if proto in ['TLSv1.0', 'TLSv1.1'] %}rgba(255, 210, 0, 0.3){% else %}rgba(0, 245, 160, 0.3){% endif %}{% else %}rgba(255, 255, 255, 0.05){% endif %};">
+                                            <div style="font-size: 0.7rem; color: var(--color-text-secondary);">{{ proto }}</div>
+                                            <div style="font-size: 1rem; font-weight: bold; margin-top: 0.2rem; color: {% if supported %}{% if proto in ['TLSv1.0', 'TLSv1.1'] %}var(--color-yellow){% else %}var(--color-green){% endif %}{% else %}var(--color-text-muted){% endif %};">
+                                                {% if supported %}✓{% else %}✗{% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {% if results.ssl.details.legacy_risk %}
+                                <div class="dns-policy-status warning-box" style="margin-top: 1rem; border-color: var(--color-yellow); background-color: rgba(255, 210, 0, 0.03);">
+                                    <strong class="text-yellow">Legacy TLS Warning:</strong>
+                                    <p style="margin-top: 0.25rem; font-size: 0.8rem; color: #fef08a; text-align: left;">
+                                        Server supports legacy, deprecated TLS 1.0 or TLS 1.1 protocols. This exposes clients to handshake downgrade attacks (e.g. POODLE, BEAST). Disable TLS 1.0 and 1.1 on your host server.
+                                    </p>
+                                </div>
+                                {% endif %}
+
                                 {% if results.ssl.details.error %}
                                 <div class="dns-policy-status warning-box" style="margin-top: 1rem; border-color: var(--color-red); background-color: rgba(255, 51, 102, 0.03);">
                                     <strong class="text-red">Handshake Audit Log:</strong>
